@@ -35,6 +35,11 @@ def load_gmail_credential(path):
     return None, None
 
 
+def build_auth_mail(email, token):
+    message = __auth_message.replace('%email%', email).replace('%token%', token)
+    return message
+
+
 __db_path = 'PostmanDB.db'
 __db_manager = DatabaseManager()
 __db_manager.connect(__db_path)
@@ -70,19 +75,19 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/api/subscribe/<email>')
+@app.route('/api/subscribe/<email>', methods = ['POST'])
 def subscribe(email):
     if email is None or email.isspace():
         print('유효하지 않은 이메일 주소')
-        return
+        return f'이메일 주소를 입력해주세요.'
     
     if not validate_email(email):
         print('올바른 이메일의 형식이 아님', email)
-        return
+        return f"'{email}'\n올바른 형식의 이메일이 아닙니다."
     
     if __sub_manager.check_subscribe(email):
         print('이미 구독중인 이메일', email)
-        return
+        return f"'{email}'\n이미 구독중인 이메일입니다."
 
     subscriber = Subscriber(email)
     __sub_manager.add_to_auth(subscriber)
@@ -92,7 +97,7 @@ def subscribe(email):
     gmail_sender = GmailSender(__gmail_account, __gmail_password, project_nickname)
     gmail_sender.send_mail([email], subject, body, True)
     
-    return email
+    return f"'{email}'\n구독을 위한 인증메일이 발송되었습니다.\n이메일을 확인해주세요."
 
 
 @app.route('/api/unsubscribe/<email>/<token>')
@@ -159,12 +164,5 @@ def elements():
 
 # ------------------------------
 
-def build_auth_mail(email, token):
-    message = __auth_message.replace('%email%', email).replace('%token%', token)
-    return message
-
-# ------------------------------
-
 if __name__ == '__main__':
     app.run()
-    
