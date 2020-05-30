@@ -111,6 +111,7 @@
                                                 onblur="this.placeholder='이메일을 입력하세요'">
                                             <button id="subscribe" type="button" class="btn header-btn">구독하기</button>
                                         </div>
+                                        <div class="g-recaptcha" data-sitekey="6LcEDf4UAAAAALppz4CAN1S0Wha6Qsz_KLi8Yqfz"></div>
                                     </div>
                                 </div>
                             </div>
@@ -267,29 +268,43 @@
     <script src="{{ url_for('static', filename='js/plugins.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
+    <!-- google recaptcha -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    
     <script type="text/javascript">
         function subscribe() {
-            $("#subscribe").attr('disabled', true);
             var email = $("#email").val();
-            if (validate_email(email)) {
-                $.ajax({
-                    type: 'POST',
-                    url: '/api/subscribe/' + email,
-                    success: function (result) {
-                        alert(result);
-                        $("#email").val('');
-                        $("#subscribe").attr('disabled', false);
-                    },
-                    error: function (xtr, status, error) {
-                        alert(xtr + ":" + status + ":" + error);
-                        $("#email").val('');
-                        $("#subscribe").attr('disabled', false);
-                    }
-                });
-            } else {
+            if (validate_email(email) == false) {
                 alert('이메일 형식이 올바르지 않습니다.');
-                $("#subscribe").attr('disabled', false);
+                return;
             }
+
+            var grecaptcha_response = grecaptcha.getResponse();
+            if (grecaptcha_response.length == 0) {
+                alert('reCAPTCHA를 확인해주세요.');
+                return;
+            }
+
+            $("#subscribe").attr('disabled', true);
+            $.ajax({
+                type: 'POST',
+                url: '/api/subscribe',
+                async: false,
+                dataType: 'text',
+                data: {
+                    "email": email,
+                    "grecaptcha_response": grecaptcha_response
+                },
+                success: function (result) {
+                    alert(result);
+                },
+                error: function (xtr, status, error) {
+                    alert(xtr + ":" + status + ":" + error);
+                }
+            });
+            $("#email").val('');
+            $("#subscribe").attr('disabled', false);
+            window.location.reload();
         }
 
         function validate_email(email) {
@@ -300,7 +315,6 @@
 
         $("#subscribe").on("click", function () {
             subscribe();
-            
         });
     </script>
 

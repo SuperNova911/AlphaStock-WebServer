@@ -58,8 +58,22 @@ import codecs
 
 
 __auth_file_path = 'auth.html'
-__auth_file = codecs.open(__auth_file_path, 'r', 'utf-8')
-__auth_message = __auth_file.read()
+__auth_message = codecs.open(__auth_file_path, 'r', 'utf-8').read()
+__recaptcha_secret_key_path = 'recaptcha.secret'
+__recaptcha_secret_key = codecs.open(__recaptcha_secret_key_path, 'r', 'utf-8').read()
+
+# ------------------------------
+
+import requests
+
+
+__url = 'https://www.google.com/recaptcha/api/siteverify'
+
+
+def check_recaptcha(user_response):
+    payload = { 'secret': __recaptcha_secret_key, 'response': user_response }
+    response = requests.post(__url, data = payload).json()
+    return response['success']
 
 # ------------------------------
 
@@ -75,13 +89,16 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/api/subscribe/<email>', methods = ['POST'])
-def subscribe(email):
-    if email is None or email.isspace():
-        print('유효하지 않은 이메일 주소')
-        return f'이메일 주소를 입력해주세요.'
-    
-    if not validate_email(email):
+@app.route('/api/subscribe', methods = ['POST'])
+def subscribe():
+    email = request.form['email']
+    grecaptcha_response = request.form['grecaptcha_response']
+
+    if grecaptcha_response is None or not check_recaptcha(grecaptcha_response):
+        print('reCAPTCHA가 만료됨')
+        return 'reCAPTCHA가 만료되었습니다.\n다시 시도해주세요.'
+
+    if email is None or email.isspace() or not validate_email(email):
         print('올바른 이메일의 형식이 아님', email)
         return f"'{email}'\n올바른 형식의 이메일이 아닙니다."
     
