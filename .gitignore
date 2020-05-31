@@ -138,3 +138,5 @@ dmypy.json
 cython_debug/
 GmailCredential.txt
 recaptcha.secret
+postman_settings.json
+alphastock_settings.json

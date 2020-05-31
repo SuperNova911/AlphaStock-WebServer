@@ -1,38 +1,23 @@
-import sys
-
-
-__postman_module_path = r'C:\Users\suwha\Documents\GitHub\Postman\Postman Python'
-sys.path.append(__postman_module_path)
+import postman
 
 # ------------------------------
 
-from subscriber import Subscriber
-from subscribemanager import SubscribeManager
-from dbmanager import DatabaseManager
-from mailsender import GmailSender
-from validate_email import validate_email
+import os.path
+from appsettings import AlphaStockSettings
 
 
-def load_gmail_credential(path):
-    with open(path) as file:
-        lines = [line.rstrip() for line in file]
-    for line in lines:
-        credential = line.split('/')
-        if len(credential) != 2:
-            print('잘못된 형식의 Credential', credential)
-            continue
+__settings_path = './alphastock_settings.json'
+settings = AlphaStockSettings()
+if not os.path.exists(__settings_path):
+    print(f"새로운 설정 파일 생성, '{__settings_path}'")
+    settings.create_settings(__settings_path)
+    exit()
+else:
+    settings.load_settings(__settings_path)
 
-        id = credential[0]
-        password = credential[1]
-        if id.isspace() or password.isspace():
-            print('아이디 또는 비밀번호가 빈 문자열', id, password)
-            continue
+# ------------------------------
 
-        if not validate_email(id):
-            print('올바른 이메일의 형식이 아님', id)
-
-        return id, password
-    return None, None
+import codecs
 
 
 def build_auth_mail(email, token):
@@ -40,44 +25,26 @@ def build_auth_mail(email, token):
     return message
 
 
-__db_path = 'PostmanDB.db'
-__db_manager = DatabaseManager()
-__db_manager.connect(__db_path)
-
-__gmail_credential_path = 'GmailCredential.txt'
-__gmail_account, __gmail_password = load_gmail_credential(__gmail_credential_path)
-if __gmail_account is None or __gmail_password is None:
-    print('Gmail Credential을 불러오지 못함')
-    exit()
-
-__sub_manager = SubscribeManager()
-
-# ------------------------------
-
-import codecs
-
-
-__auth_file_path = 'auth.html'
+__auth_file_path = './auth.html'
 __auth_message = codecs.open(__auth_file_path, 'r', 'utf-8').read()
-__recaptcha_secret_key_path = 'recaptcha.secret'
-__recaptcha_secret_key = codecs.open(__recaptcha_secret_key_path, 'r', 'utf-8').read()
 
 # ------------------------------
 
 import requests
 
 
-__url = 'https://www.google.com/recaptcha/api/siteverify'
-
-
 def check_recaptcha(user_response):
-    payload = { 'secret': __recaptcha_secret_key, 'response': user_response }
+    payload = { 'secret': settings.recaptcha_secret, 'response': user_response }
     response = requests.post(__url, data = payload).json()
     return response['success']
+
+
+__url = 'https://www.google.com/recaptcha/api/siteverify'
 
 # ------------------------------
 
 from flask import Flask, render_template, redirect, url_for, request, jsonify
+from validate_email import validate_email
 
 
 app = Flask(__name__)
@@ -102,16 +69,16 @@ def subscribe():
         print('올바른 이메일의 형식이 아님', email)
         return f"'{email}'\n올바른 형식의 이메일이 아닙니다."
     
-    if __sub_manager.check_subscribe(email):
+    if postman.sub_manager.check_subscribe(email):
         print('이미 구독중인 이메일', email)
         return f"'{email}'\n이미 구독중인 이메일입니다."
 
-    subscriber = Subscriber(email)
-    __sub_manager.add_to_auth(subscriber)
+    subscriber = postman.Subscriber(email)
+    postman.sub_manager.add_to_auth(subscriber)
     subject = f'{project_nickname} 구독 인증 메일입니다'
     body = build_auth_mail(subscriber.email, subscriber.token)
 
-    gmail_sender = GmailSender(__gmail_account, __gmail_password, project_nickname)
+    gmail_sender = postman.GmailSender(postman.settings.gmail_account, postman.settings.gmail_password, project_nickname)
     gmail_sender.send_mail([email], subject, body, True)
     
     return f"'{email}'\n구독을 위한 인증메일이 발송되었습니다.\n이메일을 확인해주세요."
@@ -135,11 +102,11 @@ def unsubscribe(email, token):
         print('올바른 토큰의 형식이 아님', token)
         return
 
-    if not __sub_manager.check_subscribe(email):
+    if not postman.sub_manager.check_subscribe(email):
         print('구독중이 아닌 이메일 주소', email)
         return
 
-    __sub_manager.unsubscribe(email, token)
+    postman.sub_manager.unsubscribe(email, token)
     
     return email + ", " + token
 
@@ -162,15 +129,15 @@ def auth(email, token):
         print('올바른 토큰의 형식이 아님', token)
         return
 
-    if __sub_manager.check_subscribe(email):
+    if postman.sub_manager.check_subscribe(email):
         print('이미 구독중인 이메일', email)
         return
 
-    if not __sub_manager.auth(email, token):
+    if not postman.sub_manager.auth(email, token):
         print('인증 실패', email, token)
         return
     
-    __sub_manager.subscribe(email)
+    postman.sub_manager.subscribe(email)
 
     return email + ", " + token
 
