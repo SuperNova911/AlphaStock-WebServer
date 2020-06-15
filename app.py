@@ -25,8 +25,14 @@ def build_auth_mail(email, token):
     return message
 
 
+def build_welcome_mail(email, token):
+    message = __welcome_message.replace('%email%', email).replace('%token%', token)
+
+
 __auth_file_path = './auth.html'
+__welcome_file_path = './welcome.html'
 __auth_message = codecs.open(__auth_file_path, 'r', 'utf-8').read()
+__welcome_message = codecs.open(__welcome_file_path, 'r', 'utf-8').read()
 
 # ------------------------------
 
@@ -54,6 +60,60 @@ project_nickname = '주가예측 알리미'
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/favorite/<email>/<token>')
+def favorite(email, token):
+    if email is None or email.isspace() or not validate_email(email):
+        print('올바른 이메일의 형식이 아님', email)
+        return 'Credential을 확인할 수 없습니다.'
+
+    if token is None or token.isspace() or len(token) != 8:
+        print('올바른 토큰의 형식이 아님', token)
+        return 'Credential을 확인할 수 없습니다.'
+
+    subscriber = postman.Subscriber(email)
+    if token != subscriber.token:
+        print('토큰이 일치하지 않음', token)
+        return 'Credential을 확인할 수 없습니다.'
+
+    if not postman.sub_manager.check_subscribe(email):
+        print('구독중이 아닌 이메일', email)
+        return '구독자만 이용할 수 있습니다.'
+
+    # favorites = { 'data': postman.db_manager.select_favorite_stock_ids(subscriber) }
+    favorites = postman.db_manager.select_favorite_stock_ids(subscriber)
+
+    return render_template('favorite.html', email = email, token = token, stock_table = postman.stock_table, favorites = favorites)
+
+
+@app.route('/api/favorite', methods = ['POST'])
+def save_favorite():
+    email = request.form['email']
+    token = request.form['token']
+    favorites = request.form.getlist('favorites[]')
+
+    if email is None or email.isspace() or not validate_email(email):
+        print('올바른 이메일의 형식이 아님', email)
+        return 'Credential을 확인할 수 없습니다.'
+
+    if token is None or token.isspace() or len(token) != 8:
+        print('올바른 토큰의 형식이 아님', token)
+        return 'Credential을 확인할 수 없습니다.'
+
+    subscriber = postman.Subscriber(email)
+    if token != subscriber.token:
+        print('토큰이 일치하지 않음', token)
+        return 'Credential을 확인할 수 없습니다.'
+
+    if not postman.sub_manager.check_subscribe(email):
+        print('구독중이 아닌 이메일', email)
+        return '구독자만 이용할 수 있습니다.'
+
+    postman.db_manager.delete_all_favorites(subscriber)
+    postman.db_manager.insert_favorites(subscriber, favorites)
+
+    return '저장되었습니다.'
 
 
 @app.route('/api/subscribe', methods = ['POST'])
@@ -86,60 +146,49 @@ def subscribe():
 
 @app.route('/api/unsubscribe/<email>/<token>')
 def unsubscribe(email, token):
-    if email is None or email.isspace():
-        print('유효하지 않은 이메일 주소')
-        return
-    
-    if not validate_email(email):
+    if email is None or email.isspace() or not validate_email(email):
         print('올바른 이메일의 형식이 아님', email)
-        return
+        return f"'{email}'\n올바른 형식의 이메일이 아닙니다."
 
-    if token is None or token.isspace():
-        print('유효하지 않은 토큰')
-        return
-    
-    if len(token) != 8:
+    if token is None or token.isspace() or len(token) != 8:
         print('올바른 토큰의 형식이 아님', token)
-        return
+        return '구독 해지 실패'
 
     if not postman.sub_manager.check_subscribe(email):
         print('구독중이 아닌 이메일 주소', email)
-        return
+        return f"'{email}'\n구독중이 아닌 이메일입니다."
 
     postman.sub_manager.unsubscribe(email, token)
     
-    return email + ", " + token
+    return f"'{email}'\n구독 해지"
 
 
 @app.route('/api/auth/<email>/<token>')
 def auth(email, token):
-    if email is None or email.isspace():
-        print('유효하지 않은 이메일 주소')
-        return
-    
-    if not validate_email(email):
+    if email is None or email.isspace() or not validate_email(email):
         print('올바른 이메일의 형식이 아님', email)
-        return
+        return '인증 실패'
 
-    if token is None or token.isspace():
-        print('유효하지 않은 토큰')
-        return
-    
-    if len(token) != 8:
+    if token is None or token.isspace() or len(token) != 8:
         print('올바른 토큰의 형식이 아님', token)
-        return
+        return '인증 실패'
 
     if postman.sub_manager.check_subscribe(email):
         print('이미 구독중인 이메일', email)
-        return
+        return '인증 실패'
 
     if not postman.sub_manager.auth(email, token):
         print('인증 실패', email, token)
-        return
+        return '인증 실패'
     
     postman.sub_manager.subscribe(email)
+    subject = f'[{project_nickname}] 관심 종목을 선택해주세요'
+    body = build_welcome_mail(email, token)
 
-    return email + ", " + token
+    gmail_sender = postman.GmailSender(postman.settings.gmail_account, postman.settings.gmail_password, project_nickname)
+    gmail_sender.send_mail([email], subject, body, True)
+
+    return '이메일 인증이 완료되었습니다.\n이메일을 확인해 주세요.'
 
 
 @app.route('/elements')

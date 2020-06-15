@@ -1,7 +1,7 @@
 import sys
 
 
-__postman_module_path = r'C:\Users\suwha\Documents\GitHub\Postman\Postman Python'
+__postman_module_path = r'C:\Users\suwha\Documents\GitHub\Postman\PostmanPython'
 sys.path.append(__postman_module_path)
 
 # ------------------------------
@@ -29,3 +29,5 @@ db_manager = DatabaseManager()
 db_manager.connect(__db_settings.mysql_server, __db_settings.database, __db_settings.user_id, __db_settings.password)
 
 sub_manager = SubscribeManager()
+
+stock_table = db_manager.select_all_stocks()

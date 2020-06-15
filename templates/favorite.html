@@ -1,0 +1,79 @@
+<html>
+    <head>
+        <script src="{{ url_for('static', filename='js/vendor/jquery-1.12.4.min.js') }}"></script>
+
+        <script>
+            $(document).ready(function() {
+                var tableBody = document.getElementById('favoriteTableBody');
+
+                var parsed = JSON.parse('{{stock_table | tojson}}');
+                for (var key in parsed) {
+                    var row = tableBody.insertRow(tableBody.rows.length);
+                    var cell1 = row.insertCell(0);
+                    var cell2 = row.insertCell(1);
+                    cell1.innerHTML = '<input id="' + key + '" type="checkbox">';
+                    cell2.innerHTML = parsed[key];
+                }
+
+                var favorites = JSON.parse('{{favorites | tojson}}');
+                for (var key in favorites) {
+                    var checkbox = document.getElementById(favorites[key]);
+                    checkbox.checked = true;
+                }
+            });
+
+            function saveFavorites() {
+                $("#saveButton").attr('disabled', true);
+
+                var newFavorites = new Array();
+                var parsed = JSON.parse('{{stock_table | tojson}}');
+                for (var key in parsed) {
+                    var checkbox = document.getElementById(key);
+                    if (checkbox.checked) {
+                        newFavorites.push(key);
+                    }
+                }
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/favorite',
+                    async: false,
+                    dataType: 'text',
+                    data: {
+                        "email": '{{email}}',
+                        "token": '{{token}}',
+                        "favorites": newFavorites
+                    },
+                    success: function (result) {
+                        alert(result);
+                    },
+                    error: function (xtr, status, error) {
+                        alert(xtr + ":" + status + ":" + error);
+                    }
+                });
+
+                $("#saveButton").attr('disabled', false);
+            }
+        </script>
+    </head>
+    <body>
+        <button id="saveButton" class="btn btn-primary" onclick="saveFavorites()"
+            style="color:#ffffff;text-decoration:none;background-color:#0366d6;border:solid 1px #0366d6;border-radius:5px;display:inline-block;font-size:16px;font-weight:bold;margin:0;padding:10px 20px;border-color:#0366d6; cursor: pointer;">
+            즐겨찾기 저장
+        </button>
+        <div>
+            <hr style="height:0;overflow:visible;margin-top:20px;margin-bottom:20px;border:0;border-top:1px solid #eee;">
+        </div>
+        <table id="favoriteTable" style="border: 1px #ccc;">
+            <thead>
+                <tr>
+                    <th>즐겨찾기</th>
+                    <th>종목</th>
+                </tr>
+            </thead>
+            <tbody id="favoriteTableBody">
+                
+            </tbody>
+        </table>
+    </body>
+</html>

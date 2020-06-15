@@ -8,8 +8,10 @@
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="manifest" href="site.webmanifest">
-    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='img/favicon/site.webmanifest') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon/apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon/favicon-16x16.png') }}">
 
     <!-- CSS here -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
@@ -33,7 +35,7 @@
             <div class="preloader-inner position-relative">
                 <div class="preloader-circle"></div>
                 <div class="preloader-img pere-text">
-                    <img src="{{ url_for('static', filename='img/logo/logo.png') }}" alt="">
+                    <img src="{{ url_for('static', filename='img/logo/icon.png') }}" style="width: 40%;" alt="">
                 </div>
             </div>
         </div>
@@ -49,8 +51,9 @@
                         <!-- Logo -->
                         <div class="col-xl-2 col-lg-2 col-md-1">
                             <div class="logo">
-                                <a href="index.html"><img src="{{ url_for('static', filename='img/logo/logo.png') }}"
-                                        alt=""></a>
+                                <a href="index.html">
+                                    <img src="{{ url_for('static', filename='img/logo/logo.png') }}" style="width: 150%;" alt="">
+                                </a>
                             </div>
                         </div>
                         <div class="col-xl-8 col-lg-8 col-md-8">
@@ -145,8 +148,8 @@
                                     <!-- logo -->
                                     <div class="footer-logo">
                                         <a href="index.html"><img
-                                                src="{{ url_for('static', filename='img/logo/logo2_footer.png') }}"
-                                                alt=""></a>
+                                                src="{{ url_for('static', filename='img/logo/logo.png') }}" style="width: 100%;" alt="">
+                                        </a>
                                     </div>
                                     <div class="footer-tittle">
                                         <div class="footer-pera">
