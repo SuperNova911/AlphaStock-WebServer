@@ -27,6 +27,7 @@ def build_auth_mail(email, token):
 
 def build_welcome_mail(email, token):
     message = __welcome_message.replace('%email%', email).replace('%token%', token)
+    return message
 
 
 __auth_file_path = './auth.html'
