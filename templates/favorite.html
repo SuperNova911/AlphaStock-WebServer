@@ -11,8 +11,10 @@
                     var row = tableBody.insertRow(tableBody.rows.length);
                     var cell1 = row.insertCell(0);
                     var cell2 = row.insertCell(1);
+                    var cell2 = row.insertCell(2);
                     cell1.innerHTML = '<input id="' + key + '" type="checkbox">';
                     cell2.innerHTML = parsed[key];
+                    cell3.innerHTML = key;
                 }
 
                 var favorites = JSON.parse('{{favorites | tojson}}');
@@ -69,6 +71,7 @@
                 <tr>
                     <th>즐겨찾기</th>
                     <th>종목</th>
+                    <th>종목 코드</th>
                 </tr>
             </thead>
             <tbody id="favoriteTableBody">
